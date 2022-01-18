@@ -71,3 +71,23 @@ def test_create_bdb(client):
     # Clean up
     # TODO: Not implemented yet on the server side
     # client.delete(bdb_url)
+
+
+def test_pagination(client):
+    first_url = f"{BDBS_URL}?offset={0}&limit={2}"
+
+    url = first_url
+    uids_forward = set()
+    while url:
+        r = client.get(url)
+        uids_forward.update(e["bdb"]["uid"] for e in r.json())
+        url = r.links.get("next", {}).get("url")
+
+    url = client.get(first_url).links["last"]["url"]
+    uids_backward = set()
+    while url:
+        r = client.get(url)
+        uids_backward.update(e["bdb"]["uid"] for e in r.json())
+        url = r.links.get("prev", {}).get("url")
+
+    assert uids_forward == uids_backward

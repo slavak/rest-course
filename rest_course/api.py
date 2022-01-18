@@ -46,18 +46,27 @@ def get_all_bdbs(
     offset: NonNegativeInt = 0,
     limit: NonNegativeInt = 1000,
 ):
-    def url_with_offset(offset):
+    def url_with_offset(offset, _limit=limit):
         return url_for(
-            request, "get_all_bdbs", query_params=dict(offset=offset, limit=limit)
+            request, "get_all_bdbs", query_params=dict(offset=offset, limit=_limit)
         )
 
-    # Exercise: Look up and use the correct numbers
+    bdb_count = len(list(bdb_manager.get_bdb_uids()))
+
     rels = dict(
         first=url_with_offset(0),
-        prev=url_with_offset(40),
-        next=url_with_offset(50),
-        last=url_with_offset(90),
+        last=url_with_offset(bdb_count - bdb_count % limit),
     )
+    if 0 < offset <= bdb_count:
+        prev = offset - limit
+        prev_limit = limit
+        if prev < 0:
+            prev_limit = limit + prev
+            prev = 0
+        rels["prev"] = url_with_offset(prev, prev_limit)
+    if offset + limit < bdb_count:
+        _next = offset + limit
+        rels["next"] = url_with_offset(_next)
 
     response.headers["link"] = link(rels)
 
